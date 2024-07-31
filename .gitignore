@@ -1,0 +1,49 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# C extensions
+*.so
+
+# Sphinx documentation
+docs/_build/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# json
+*.json
+
+# Environments
+.env
+.venv
+
+#Test files
+test.py
+
+# Text documentation
+Documentation/
+
+# .EXE application build folders
+build/
+dist/
+SR11(for test)/
+
+# don't add main processing 
+Testus.py
+
+# Useless files
+tk_scroll_demo.py
+
+# Hide templates
+VibraTable_Template — копия.docx
+VibraTable_Template_DS.docx
+VibraTable_Template_NIISF.docx
+ResidualStrain_Template.docx
+Statica_Template.docx
+
+# Archives
+*.rar
