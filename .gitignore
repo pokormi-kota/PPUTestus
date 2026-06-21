@@ -25,9 +25,8 @@ docs/_build/
 test.py
 
 # Text documentation
-Documentation/*.docx
+# Documentation/*.docx
 Documentation/*.drawio
-Documentation/*.png
 
 # .EXE application build folders
 build/

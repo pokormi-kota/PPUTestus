@@ -1,10 +1,12 @@
 <div align="center">
 
-<img src="assets/Logo.png" alt="PPUTestus logo" width="180"/>
-
 # PPUTestus
 
 **Desktop toolkit for processing mechanical test data of vibration‑isolation materials and auto‑generating measurement protocols.**
+
+<img src="Documentation/Interface_overall.png" alt="PPUTestus interface" width="820"/>
+
+<sub><em>Raw sensor data on the left, computed transfer function and vibration‑isolation efficiency on the right — one click to the protocol.</em></sub>
 
 [![Python](https://img.shields.io/badge/Python-3.8%E2%80%933.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![GUI](https://img.shields.io/badge/GUI-ttkbootstrap-5a2d82)](https://ttkbootstrap.readthedocs.io/)
@@ -94,6 +96,10 @@ python main.py
 
 ### Build a standalone executable
 
+> **This is the preferred way to ship the app.** It is meant to be used by engineers, not computer
+> scientists — a single double‑clickable executable means no Python, no virtual environment and no
+> `pip install` on the lab machine.
+
 ```bash
 pip install pyinstaller
 pyinstaller PPUTestus.spec
@@ -115,6 +121,18 @@ A full user manual (Russian) is available in [`Documentation/`](Documentation/).
 
 The `Documentation/` folder contains the user guide (`PPUtestus инструкция пользователя.pdf`) and
 workflow / data‑flow diagrams describing the processing pipeline for each bench.
+
+## A little fun on the side
+
+Forget to fill in some input data before hitting **Calculate**? The app won't just throw a stack trace at
+you — it answers with a randomly chosen meme. A small touch added to make a lab engineer's repetitive day
+a little less boring.
+
+<div align="center">
+<img src="assets/godfather_w.png" alt="You ask me to calculate, but you didn't enter all the data" height="190"/>
+<img src="assets/kevin.jpg" alt="Input data?!" height="190"/>
+<img src="assets/rememberall.jpg" alt="The Remembrall" height="190"/>
+</div>
 
 ## License
 
