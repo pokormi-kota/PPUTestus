@@ -49,3 +49,11 @@ Statica_Template.docx
 *.rar
 ~$braTable_Template_DS.docx
 ~$xxx.docx
+
+# Claude / AI assistant files
+.claude/
+CLAUDE.md
+.claudeignore
+.cursor/
+.cursorrules
+.aider*
