@@ -1,39 +1,30 @@
 # (c) Pokormi-kota, 2023
 
 from datetime import date
-# from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)
-# from matplotlib.backend_bases import key_press_handler
 import pandas as pd
 from pathlib import Path
 from PIL import Image, ImageTk, ImageSequence
-# import re
 import random
 from re import sub
-# import tkinter
 from tkinter.filedialog import askdirectory, askopenfilenames
 from tkinter import _tkinter
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from ttkbootstrap.scrolled import ScrolledFrame
-# from ttkbootstrap.dialogs import dialogs
 
-ASSETS_PATH = Path(__file__).parent / 'assets'
+from scrolled import ScrolledxyFrame, MessageDialog, AnimatedGif, DefaultEntry
+from Testus import vibraTableOne, INFO_FILE, save_xlsx, staticTableOne, save_static_xlsx, FORCE_FILE
+from docGenerator import vibraTable_DocGenerator, statica_DocGenerator, residualStarain_DocGenerator
 
-# Next lines add the module directory to the system path to import its other submodules
+
+'''Next lines add the module directory to the system path to import its other submodules'''
 # import sys, os, inspect
 # SCRIPT_DIR = os.path.abspath(os.path.dirname(inspect.getfile(inspect.currentframe())))
 # sys.path.append(os.path.dirname(SCRIPT_DIR))
 
-# print(os.path.abspath('VibraTable_Template_NIISF.docx'))
-
-from scrolled import ScrolledxyFrame, MessageDialog, AnimatedGif
-from Testus import vibraTableOne, INFO_FILE, save_xlsx, staticTableOne, save_static_xlsx, FORCE_FILE
-from docGenerator import vibraTable_DocGenerator, statica_DocGenerator, residualStarain_DocGenerator
-
-# another way to add path
-OUTPUT_PATH = Path(__file__).parent
+ASSETS_PATH = Path(__file__).parent / 'assets'
 
 def relative_to_assets(path: str) -> Path:
     return ASSETS_PATH / Path(path)
@@ -69,11 +60,11 @@ class PPU_Testus(ttk.Frame):
         
         # left panel
         self.notebook = ttk.Notebook(p)    
-        self.left_panel1 = LeftPanelVibration(self.notebook, controller=self, padding=(10,10,10,0))
+        self.left_panel1 = LeftPanelVibration(self.notebook, controller=self, padding=(0,0,0,0))
         self.notebook.add(self.left_panel1, text='Вибростолик')
-        self.left_panel2 = LeftPanelStatica(self.notebook, controller=self, padding=(10,10,10,0))
+        self.left_panel2 = LeftPanelStatica(self.notebook, controller=self, padding=(0,0,0,0))
         self.notebook.add(self.left_panel2, text='УПСИ-1')
-        self.left_panel3 = LeftPanelResidualStrain(self.notebook, controller=self, padding=(10,10,10,0))
+        self.left_panel3 = LeftPanelResidualStrain(self.notebook, controller=self, padding=(0,0,0,0))
         self.notebook.add(self.left_panel3, text='Ост.Деф.')
         
         # right panel
@@ -107,36 +98,46 @@ class PPU_Testus(ttk.Frame):
                 axes = ['1','2']
             elif self.getvar('channels_order') == '0':
                 axes = ['2','1']
-                
-            try:
-                self.plots, self.datas, self.results = vibraTableOne(name = self.getvar('name'),
-                                        files = [self.getvar(f'info_file{i}') for i in range(n)],
-                                        a = a,
-                                        b = b,
-                                        h = h,
-                                        heights = [float(sub(',', '.', self.getvar(f'height{i}'))) for i in range(n)],
-                                        axes = axes,
-                                        loads = [float(sub(',', '.', self.getvar(f'mass{i}'))) for i in range(n)]
-                                )
-            except FileNotFoundError as err:
-                print(err)
-                raise ValueError
             
-            # Delete everything from right panel if the button pressed repeatedly
-            if (hasattr(self.right_panel, 'scroll_frm') == True) and (self.right_panel.scroll_frm.winfo_exists() == True):
-                self.right_panel.clear_it()
-            if (hasattr(self.right_panel, 'input') == True) and (self.right_panel.input.winfo_exists() == True):
-                self.right_panel.clear_it()
-                
-            self.right_panel.add_scroll_frame()
-            for fig in list(self.plots.values()):
-                add_mpl_figure(self.right_panel.scroll_frm, fig)
-                
-        except (_tkinter.TclError, ValueError):  #
+            name = self.getvar('name')
+            files = [self.getvar(f'info_file{i}') for i in range(n)]
+            heights = [float(sub(',', '.', self.getvar(f'height{i}'))) for i in range(n)]
+            loads = [float(sub(',', '.', self.getvar(f'mass{i}'))) for i in range(n)]
+            first_freq = int(self.getvar('first_freq'))
+            last_freq = int(self.getvar('last_freq'))
+        
+        except (_tkinter.TclError, ValueError) as err:  #
             # Exception called when some initial data is missing
             img = ASSETS_PATH / random.choice(self.image_files['forget_mems'])
             md = MessageDialog("", parent=self.right_panel, title='Ты кое-что забыл', icon=img)
             md.show()
+            print(err)
+            
+        try:
+            self.plots, self.datas, self.results = vibraTableOne(name = name,
+                                    files = files,
+                                    a = a,
+                                    b = b,
+                                    h = h,
+                                    heights = heights,
+                                    axes = axes,
+                                    loads = loads,
+                                    limits = (first_freq, last_freq)
+                            )
+        except FileNotFoundError as err:
+            print(err)
+            raise ValueError
+        
+        # Delete everything from right panel if the button pressed repeatedly
+        if (hasattr(self.right_panel, 'scroll_frm') == True) and (self.right_panel.scroll_frm.winfo_exists() == True):
+            self.right_panel.clear_it()
+        if (hasattr(self.right_panel, 'input') == True) and (self.right_panel.input.winfo_exists() == True):
+            self.right_panel.clear_it()
+            
+        self.right_panel.add_scroll_frame()
+        for fig in list(self.plots.values()):
+            add_mpl_figure(self.right_panel.scroll_frm, fig)
+                
             
     def calculateStatica(self):
         
@@ -450,15 +451,15 @@ class LeftPanelVibration(ttk.Frame):
         
         # header
         hdr_frame = ttk.Frame(self, padding=10, bootstyle=PRIMARY)
-        hdr_frame.pack(fill=BOTH, pady=1, side=TOP)
+        hdr_frame.pack(fill=BOTH, pady=0, side=TOP)
 
-        logo_text = ttk.Label(
+        hdr_text = ttk.Label(
             master=hdr_frame,
             text='Исходные данные',
             font=('TkDefaultFixed', 20),
             bootstyle=(INVERSE, PRIMARY)
         )
-        logo_text.pack(side=LEFT, padx=10)
+        hdr_text.pack(side=LEFT, padx=10)
         
         
         ## series name input
@@ -468,8 +469,7 @@ class LeftPanelVibration(ttk.Frame):
             master=name_input,
             text='Номер (название) образца',
             justify = CENTER,
-            wraplength = 120,
-            # height=5,
+            wraplength = 180,
             width=20,
             bootstyle=PRIMARY,
         )
@@ -478,27 +478,7 @@ class LeftPanelVibration(ttk.Frame):
         self.name_input = ttk.Entry(name_input, textvariable='name', validate="focusout", validatecommand=(insert_validate, '%P'))
         self.name_input.pack(side=LEFT, padx=(10,10))
         
-        
-        # ## production date input
-        # product_date = ttk.Frame(self)
-        # product_date.pack(side=TOP, padx=2, pady=10)
-        # text = ttk.Label(
-        #     master=product_date,
-        #     text='Дата изготовления',
-        #     justify = CENTER,
-        #     wraplength = 150,
-        #     width=20,
-        #     bootstyle=PRIMARY
-        # )
-        # text.pack(side=LEFT, padx=(10,10))
-
-        # self.product_date = ttk.DateEntry(master=product_date, 
-        #                                   dateformat='%Y-%m-%d', 
-        #                                   firstweekday=0, 
-        #                                   startdate=date.today(),
-        #                                   )
-        # self.product_date.pack(side=LEFT, padx=(10,10)) 
-        
+              
         
         protocol_input = ttk.Frame(self)
         protocol_input.pack(side=TOP, padx=2, pady=10)
@@ -506,8 +486,7 @@ class LeftPanelVibration(ttk.Frame):
             master=protocol_input,
             text='Номер протокола (опционально)',
             justify = CENTER,
-            wraplength = 120,
-            # height=5,
+            wraplength = 180,
             width=20,
             bootstyle=PRIMARY,
         )
@@ -523,7 +502,7 @@ class LeftPanelVibration(ttk.Frame):
             master=test_date,
             text='Дата испытаний',
             justify = CENTER,
-            wraplength = 150,
+            wraplength = 180,
             width=20,
             bootstyle=PRIMARY
         )
@@ -543,29 +522,29 @@ class LeftPanelVibration(ttk.Frame):
         
         ## files input
         file_input_frm = ttk.Frame(self)
-        file_input_frm.pack(side=TOP, fill=BOTH, padx=2, pady=10, expand=YES)
+        file_input_frm.pack(side=TOP, fill=BOTH, padx=2, pady=5, expand=YES)
         file_input_hdr = ttk.Frame(file_input_frm)
-        file_input_hdr.pack(side=TOP, fill=X, padx=2, pady=0)
-        input_frm =  ScrolledFrame(file_input_frm, bootstyle=DEFAULT, height=160, width=600, autohide=True)
-        input_frm.pack(fill=BOTH, pady=1, side=TOP, expand=YES)
+        file_input_hdr.pack(side=TOP, anchor=E, padx=0, pady=0)
+        input_frm =  ScrolledFrame(file_input_frm, bootstyle=DEFAULT, height=150, width=600, autohide=True)
+        input_frm.pack(fill=BOTH, padx=2, pady=1, side=TOP, expand=YES)
         text = ttk.Label(
             master=file_input_hdr,
             text='Пригруз, кг',
             justify = CENTER,
-            wraplength = 100,
+            wraplength = 150,
             width=11,
             bootstyle=PRIMARY
         )
-        text.pack(side=RIGHT, padx=2)
+        text.pack(side=RIGHT, anchor=E, padx=4)
         text = ttk.Label(
             master=file_input_hdr,
-            text='Высота под нагрузкой(h), мм',
+            text='h под нагрузкой, мм',
             justify = CENTER,
-            wraplength = 100,
-            width=15,
+            wraplength = 150,
+            width=14,
             bootstyle=PRIMARY
         )
-        text.pack(side=RIGHT, padx=2)
+        text.pack(side=RIGHT, anchor=E, padx=5)
         entry_list, mass_list, height_list = [], [], []
         self.setvar("num_entries", len(entry_list))
         self.add_entry(input_frm, entry_list, mass_list, height_list)
@@ -599,28 +578,73 @@ class LeftPanelVibration(ttk.Frame):
         self.setvar(f'channels_order', '0')
         channels_order.pack(side=TOP, fill=X, padx=20, pady=10, expand=NO)
         
+        
+        # Optional record cuts
+        cuts_frm = ttk.Frame(self)
+        cuts_frm.pack(side=TOP, fill=X, pady=(30,0))
+        text = ttk.Label(
+            master=cuts_frm,
+            text='*Начальная частота',
+            justify = RIGHT,
+            wraplength = 150,
+            bootstyle=PRIMARY
+        )
+        text.pack(side=LEFT, padx=(10,10))
+        cut_start = DefaultEntry(cuts_frm, textvariable='first_freq', default_val='0', width=10)
+        cut_start.pack(side=LEFT, expand=NO)
+        # self.setvar('first_freq', '0')
+        text = ttk.Label(
+            master=cuts_frm,
+            text='Гц',
+            justify = RIGHT,
+            wraplength = 150,
+            bootstyle=PRIMARY
+        )
+        text.pack(side=LEFT, padx=(10,0))
+        
+        text = ttk.Label(
+            master=cuts_frm,
+            text='*Конечная частота',
+            justify = RIGHT,
+            wraplength = 150,
+            bootstyle=PRIMARY
+        )
+        text.pack(side=LEFT, padx=(30,10))
+        cut_end = DefaultEntry(cuts_frm, textvariable='last_freq', default_val='200', width=10)
+        cut_end.pack(side=LEFT, expand=NO)
+        text = ttk.Label(
+            master=cuts_frm,
+            text='Гц',
+            justify = RIGHT,
+            wraplength = 150,
+            bootstyle=PRIMARY
+        )
+        text.pack(side=LEFT, padx=(10,0))
+        
+        
+        ### result buttons and Logo
+        bottom_frm = ttk.Frame(self)
+        bottom_frm.pack(side=BOTTOM, fill=X, padx=0, pady=(10,0))
         # Logo
         img = Image.open(ASSETS_PATH / image_files['logo'])
         zoom = 120/img.size[1]
         pixels_x, pixels_y = tuple([int(zoom * x)  for x in img.size])
         logo_img = ImageTk.PhotoImage(img.resize((pixels_x, pixels_y)))
         
-        hdr_label = ttk.Label(
-            master=self,
+        logo_label = ttk.Label(
+            master=bottom_frm,
             image=logo_img,
             text=f"{ASSETS_PATH / image_files['logo']}",
             bootstyle=(PRIMARY)
         )
-        hdr_label.image = logo_img
-        hdr_label.pack(side=BOTTOM, padx=10, pady=(10,0), anchor='sw')
+        logo_label.image = logo_img
+        logo_label.pack(side=LEFT, padx=20, pady=(0,0), anchor='w')
         
-        
-        ## result buttons
-        res_btn_frm = ttk.Frame(self)
-        res_btn_frm.pack(side=BOTTOM, padx=0, pady=10)
+        # result buttons
+        res_btn_frm = ttk.Frame(bottom_frm)
+        res_btn_frm.pack(side=TOP, padx=0, pady=20)
         clear_btn = ttk.Button(
             master=res_btn_frm, 
-            # image='Clear', 
             text='Очистить',
             bootstyle=(OUTLINE, DANGER),
             command=self.reset_entries,
@@ -629,13 +653,11 @@ class LeftPanelVibration(ttk.Frame):
         clear_btn.pack(side=LEFT, ipadx=5, ipady=5, padx=20, pady=1)
         calc_btn = ttk.Button(
             master=res_btn_frm, 
-            # image='Calculate', 
             text='Рассчитать',
             bootstyle=(SUCCESS),
-            command=self.calculate, #processing()
+            command=self.calculate,
             # command=self.run_print
             width=10
-            # command=lambda: self.controller.run_print()
         )
         calc_btn.pack(side=RIGHT, ipadx=5, ipady=5, padx=20, pady=1)
     
@@ -646,9 +668,7 @@ class LeftPanelVibration(ttk.Frame):
         text = ttk.Label(
             master=entry_frm,
             text=f'Файл испытаний {len(entry_list)+1}',
-            # font=('TkDefaultFixed', 10),
             justify = CENTER,
-            # wraplength = 150,
             width=18,
             bootstyle=PRIMARY
         )
@@ -657,21 +677,21 @@ class LeftPanelVibration(ttk.Frame):
         info_file.pack(side=LEFT, fill=X, expand=YES, padx=(0,10))
         mass = ttk.Entry(entry_frm,
                          textvariable=f'mass{len(entry_list)}',
-                         width=10,
+                         width=11,
                          validate="focusout", validatecommand=(insert_validate, '%P'))
-        mass.pack(side=RIGHT, padx=10)
+        mass.pack(side=RIGHT, padx=4)
         height = ttk.Entry(entry_frm,
                            textvariable=f'height{len(entry_list)}',
-                           width=15,
+                           width=14,
                            validate="focusout", validatecommand=(insert_validate, '%P'))
-        height.pack(side=RIGHT, padx=10)
+        height.pack(side=RIGHT, padx=5)
         entry_list.append(get_entry(info_file))
         mass_list.append(mass.get())
         height_list.append(height.get())
         self.setvar("num_entries", len(entry_list))
         master.yview_moveto(0.5)
 
-        
+
     def del_last_frm(self, master, entry_list, mass_list, height_list):
         if len(entry_list)>1:
             master.winfo_children()[-1].destroy()
@@ -685,27 +705,32 @@ class LeftPanelVibration(ttk.Frame):
         
 
     def reset_entries(self):
-        """Clears all entryes in frame"""
+        """Clears all the entries in frame or sets to default"""
         for entry in get_all_entry_widgets(self):
-            # print(entry)
-            try:
-                # default = entry.master.default
-                if entry['state'] == NORMAL:
-                    entry.delete(0, END)
-                    entry.insert(0, entry.master.default)
-                else:
-                    entry.config(state=NORMAL)
-                    entry.delete(0, END)
-                    entry.insert(0, entry.master.default)
-                    entry.config(state=DISABLED)
-                
-            except AttributeError:
-                if entry['state'] == NORMAL:
-                    entry.delete(0, END)
-                else:
-                    entry.config(state=NORMAL)
-                    entry.delete(0, END)
-                    entry.config(state=DISABLED)
+            
+            if hasattr(entry, 'default_val'):  
+                entry.delete(0, END)
+                entry.insert(0, entry.default_val)
+                    
+            else:
+                try:
+                    # default = entry.master.default
+                    if entry['state'] == NORMAL:
+                        entry.delete(0, END)
+                        entry.insert(0, entry.master.default)
+                    else:
+                        entry.config(state=NORMAL)
+                        entry.delete(0, END)
+                        entry.insert(0, entry.master.default)
+                        entry.config(state=DISABLED)
+                    
+                except AttributeError:
+                    if entry['state'] == NORMAL:
+                        entry.delete(0, END)
+                    else:
+                        entry.config(state=NORMAL)
+                        entry.delete(0, END)
+                        entry.config(state=DISABLED)
                     
         self.controller.clear_pictures()
 
@@ -729,15 +754,15 @@ class LeftPanelStatica(ttk.Frame):
         
         # header
         hdr_frame = ttk.Frame(self, padding=10, bootstyle=PRIMARY)
-        hdr_frame.pack(fill=BOTH, pady=1, side=TOP)
+        hdr_frame.pack(fill=BOTH, pady=0, side=TOP)
 
-        logo_text = ttk.Label(
+        hdr_text = ttk.Label(
             master=hdr_frame,
             text='Исходные данные',
             font=('TkDefaultFixed', 20),
             bootstyle=(INVERSE, PRIMARY)
         )
-        logo_text.pack(side=LEFT, padx=10)
+        hdr_text.pack(side=LEFT, padx=10)
         
         
         ## series name input
@@ -747,17 +772,14 @@ class LeftPanelStatica(ttk.Frame):
             master=name_input,
             text='Номер (название) образца',
             justify = CENTER,
-            wraplength = 120,
-            # height=5,
+            wraplength = 180,
             width=20,
             bootstyle=PRIMARY,
         )
-        text.pack(side=LEFT, padx=(10,10))
+        text.pack(side=LEFT, padx=(10,5))
         insert_validate = self.register(validate_empty)
         self.name_input = ttk.Entry(name_input, textvariable='name', validate="focusout", validatecommand=(insert_validate, '%P'))
         self.name_input.pack(side=LEFT, padx=(10,10))
-        
-        # file_validate = self.register(validate_file)
         
         # Protocol number
         protocol_input = ttk.Frame(self)
@@ -766,16 +788,13 @@ class LeftPanelStatica(ttk.Frame):
             master=protocol_input,
             text='Номер протокола (опционально)',
             justify = CENTER,
-            wraplength = 120,
-            # height=5,
+            wraplength = 180,
             width=20,
             bootstyle=PRIMARY,
         )
-        text.pack(side=LEFT, padx=(10,10))
+        text.pack(side=LEFT, padx=(10,5))
         self.protocol_input = ttk.Entry(protocol_input, textvariable='protocol')
         self.protocol_input.pack(side=LEFT, padx=(10,10))
-        
-    
         
         # Test date input
         test_date = ttk.Frame(self)
@@ -784,11 +803,11 @@ class LeftPanelStatica(ttk.Frame):
             master=test_date,
             text='Дата испытаний',
             justify = CENTER,
-            wraplength = 150,
+            wraplength = 180,
             width=20,
             bootstyle=PRIMARY
         )
-        text.pack(side=LEFT, padx=(10,10))
+        text.pack(side=LEFT, padx=(10,5))
         self.test_date = ttk.DateEntry(master=test_date, 
                                        dateformat='%Y-%m-%d', 
                                        firstweekday=0, 
@@ -913,25 +932,28 @@ class LeftPanelStatica(ttk.Frame):
         text.pack(side=LEFT, padx=(10,0))
         
         
+        ### result buttons and Logo
+        bottom_frm = ttk.Frame(self)
+        bottom_frm.pack(side=BOTTOM, fill=X, padx=0, pady=(10,0))
         # Logo
         img = Image.open(ASSETS_PATH / image_files['logo'])
         zoom = 120/img.size[1]
         pixels_x, pixels_y = tuple([int(zoom * x)  for x in img.size])
         logo_img = ImageTk.PhotoImage(img.resize((pixels_x, pixels_y)))
         
-        hdr_label = ttk.Label(
-            master=self,
+        logo_label = ttk.Label(
+            master=bottom_frm,
             image=logo_img,
             text=f"{ASSETS_PATH / image_files['logo']}",
             bootstyle=(PRIMARY)
         )
-        hdr_label.image = logo_img
-        hdr_label.pack(side=BOTTOM, padx=10, pady=(10,0), anchor='sw')
+        logo_label.image = logo_img
+        logo_label.pack(side=LEFT, padx=20, pady=(0,0), anchor='w')
         
         
         ## Result buttons
-        res_btn_frm = ttk.Frame(self)
-        res_btn_frm.pack(side=BOTTOM, padx=0, pady=10)
+        res_btn_frm = ttk.Frame(bottom_frm)
+        res_btn_frm.pack(side=TOP, padx=0, pady=20)
         clear_btn = ttk.Button(
             master=res_btn_frm, 
             # image='Clear', 
@@ -1000,15 +1022,15 @@ class LeftPanelResidualStrain(ttk.Frame):
         
         # header
         hdr_frame = ttk.Frame(self, padding=10, bootstyle=PRIMARY)
-        hdr_frame.pack(fill=BOTH, pady=1, side=TOP)
+        hdr_frame.pack(fill=BOTH, pady=0, side=TOP)
 
-        logo_text = ttk.Label(
+        hdr_text = ttk.Label(
             master=hdr_frame,
             text='Исходные данные',
             font=('TkDefaultFixed', 20),
             bootstyle=(INVERSE, PRIMARY)
         )
-        logo_text.pack(side=LEFT, padx=10)
+        hdr_text.pack(side=LEFT, padx=10)
         
         
         ## series name input
@@ -1018,8 +1040,7 @@ class LeftPanelResidualStrain(ttk.Frame):
             master=name_input,
             text='Номер (название) образца',
             justify = CENTER,
-            wraplength = 120,
-            # height=5,
+            wraplength = 180,
             width=20,
             bootstyle=PRIMARY,
         )
@@ -1028,8 +1049,6 @@ class LeftPanelResidualStrain(ttk.Frame):
         self.name_input = ttk.Entry(name_input, textvariable='name', validate="focusout", validatecommand=(insert_validate, '%P'))
         self.name_input.pack(side=LEFT, padx=(10,10))
         
-        # file_validate = self.register(validate_file)
-        
         # Protocol number
         protocol_input = ttk.Frame(self)
         protocol_input.pack(side=TOP, padx=2, pady=10)
@@ -1037,8 +1056,7 @@ class LeftPanelResidualStrain(ttk.Frame):
             master=protocol_input,
             text='Номер протокола (опционально)',
             justify = CENTER,
-            wraplength = 120,
-            # height=5,
+            wraplength = 180,
             width=20,
             bootstyle=PRIMARY,
         )
@@ -1055,7 +1073,7 @@ class LeftPanelResidualStrain(ttk.Frame):
             master=test_date,
             text='Дата испытаний',
             justify = CENTER,
-            wraplength = 150,
+            wraplength = 180,
             width=20,
             bootstyle=PRIMARY
         )
@@ -1087,25 +1105,28 @@ class LeftPanelResidualStrain(ttk.Frame):
         self.h.pack(side=LEFT, padx=(10,10))
         
         
+        ### result buttons and Logo
+        bottom_frm = ttk.Frame(self)
+        bottom_frm.pack(side=BOTTOM, fill=X, padx=0, pady=(10,0))
         # Logo
         img = Image.open(ASSETS_PATH / image_files['logo'])
         zoom = 120/img.size[1]
         pixels_x, pixels_y = tuple([int(zoom * x)  for x in img.size])
         logo_img = ImageTk.PhotoImage(img.resize((pixels_x, pixels_y)))
         
-        hdr_label = ttk.Label(
-            master=self,
+        logo_label = ttk.Label(
+            master=bottom_frm,
             image=logo_img,
             text=f"{ASSETS_PATH / image_files['logo']}",
             bootstyle=(PRIMARY)
         )
-        hdr_label.image = logo_img
-        hdr_label.pack(side=BOTTOM, padx=10, pady=(10,0), anchor='sw')
+        logo_label.image = logo_img
+        logo_label.pack(side=LEFT, padx=20, pady=(0,0), anchor='w')
         
         
         ## Result buttons
-        res_btn_frm = ttk.Frame(self)
-        res_btn_frm.pack(side=BOTTOM, padx=0, pady=10)
+        res_btn_frm = ttk.Frame(bottom_frm)
+        res_btn_frm.pack(side=TOP, padx=0, pady=20)
         clear_btn = ttk.Button(
             master=res_btn_frm, 
             # image='Clear', 
@@ -1483,7 +1504,7 @@ class RightPanel(ttk.Frame):
             
         # header_right
         hdr_r_frame = ttk.Frame(self, padding=10, bootstyle=PRIMARY)
-        hdr_r_frame.pack(fill=BOTH, side=TOP, pady=40)
+        hdr_r_frame.pack(fill=BOTH, side=TOP, pady=(46,20))
         
         hdr_r_text = ttk.Label(
             master=hdr_r_frame,

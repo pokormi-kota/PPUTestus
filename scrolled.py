@@ -1,14 +1,19 @@
 from itertools import cycle
 from pathlib import Path
 from PIL import Image, ImageTk, ImageSequence
+
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.dialogs import dialogs
+
 from tkinter import Pack, Place, Grid
+from tkinter.filedialog import askdirectory, askopenfilenames
 import textwrap
 
+
 ASSETS_PATH = Path(__file__).parent / 'assets'
+
 
 class ScrolledxyFrame(ttk.Frame):
     def __init__(
@@ -576,7 +581,48 @@ class AnimatedGif(ttk.Frame):
         self.img_container.configure(image=next(self.image_cycle))
         # self.after(self.framerate, self.next_frame)
         self.cancel = self.after(self.framerate, self.next_frame)
+       
+       
+class BrowseFileFrm(ttk.Frame):
+    
+    def __init__(self, master, default_val, var_name, *args, **kwargs):
+        super().__init__(master, *args, **kwargs)
+        self.pack(fill=X, expand=YES)
         
+        self.default = default_val
+
+        file_entry = ttk.Entry(self, textvariable=var_name)
+        file_entry.pack(side=LEFT, fill=X, expand=YES)
+        file_entry.config(state=DISABLED)
+        file_entry.setvar(var_name, default_val)
+
+        btn = ttk.Button(
+            master=self, 
+            # image='Browse',
+            text='Обзор',
+            bootstyle=(OUTLINE, SECONDARY),
+            command=self.get_file
+        )
+        btn.pack(side=RIGHT, ipadx=5, ipady=0, padx=5, pady=1)
+        
+    def get_file(self):
+        """Open dialogue to get file and update variable"""
+        self.update_idletasks()
+        d = askopenfilenames()[0]
+        if d:
+            # .cget gets entry's textvariable name
+            self.setvar(self.cget('textvariable'), d) #there is only one entry
+            
+class DefaultEntry(ttk.Entry):
+    
+    def __init__(self, master, default_val, *args, **kwargs):
+        super().__init__(master, *args, **kwargs)
+        self.pack(fill=X, expand=YES)
+        
+        self.default_val = default_val
+        self.setvar(self.cget('textvariable'), default_val)
+        
+                    
 if __name__ == "__main__":
     app = ttk.Window()
 

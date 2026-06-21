@@ -1,4 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
+# in command_line (from the program directory) run pyinstaller PPUTestus.spec 
 
 added_files = [
          ( 'VibraTable_Template.docx', '.' ),
